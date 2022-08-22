@@ -1,18 +1,26 @@
 import './css/styles.css';
-import fetchCountry from "./fetchCountries";
-import Notiflix from 'notiflix';
+
+import fetchCountries from "./fetchCountries";
+
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
+
 import 'notiflix/dist/notiflix-3.2.5.min.css';
-import fetchCountry from './fetchCountries';
+
 import debounce from 'lodash.debounce';
+
 const DEBOUNCE_DELAY = 300;
+
 const refs = {
     input: document.querySelector("#search-box"),
     listCountry: document.querySelector(".country-list"),
     infoCountry: document.querySelector(".country-info")
 };
 
-refs.input.addEventListener("input", debounce(inputChange, DEBOUNCE_DELAY));
+function createMurkup() {
+    return Notify.info("Too many matches found. Please enter a more specific name.");
+};
+
+
 
 function markupItemsCountries(data) {
     return data.reduce((acc, element) => {
@@ -22,7 +30,7 @@ function markupItemsCountries(data) {
       <span class="country-name">${element.name.official}</span>
     </li>`);
     }, '');
-}
+};
 
 function dataCountry(data) {
     const [
@@ -35,7 +43,7 @@ function dataCountry(data) {
         },
     ] = data;
     return `
-      <div class="wrap-container">
+      <div class="wrap-country">
         <img class="country-flag" src="${svg}" alt="${name}" width="9%"/>
         <h2>${name}</h2>
       </div>
@@ -46,6 +54,23 @@ function dataCountry(data) {
       </ul>`;
 };
 
-const inputChange = (element) => {
-
-}
+const inputChange = element => {
+    refs.listCountry.innerHTML = "";
+    if (element.target.value.trim() === "") {
+        return;
+    }
+    fetchCountries(element.target.value.trim())
+        .then(data => {
+            if (data.length >= 10 && data.length != 40) {
+                createMurkup();
+            } else if (data.length >= 2) {
+                refs.listCountry.innerHTML += markupItemsCountries(data);
+            } else if (data.length === 1) {
+                refs.listCountry.innerHTML = dataCountry(data);
+            }
+        })
+        .catch(error => {
+            Notify.failure(error);
+        });
+};
+refs.input.addEventListener('input', debounce(inputChange, DEBOUNCE_DELAY));
